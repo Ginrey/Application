@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Application.DataAccess.Exceptions;
 using Application.Models;
 using Application.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -12,12 +11,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Controllers
 {
-    public class AuthController : Controller
+    public class LoginController : Controller
     {
         private readonly UserService userService;
-        private readonly ILogger<AuthController> logger;
+        private readonly ILogger<LoginController> logger;
 
-        public AuthController(UserService userService, ILogger<AuthController> logger)
+        public LoginController(UserService userService, ILogger<LoginController> logger)
         {
             this.userService = userService;
             this.logger      = logger;
@@ -28,46 +27,18 @@ namespace Application.Controllers
         {
             if (this.User.Identity != null && this.User.Identity.IsAuthenticated)
             {
-                return this.Redirect("Index");
+                return this.RedirectToAction("Index", "Home");
             }
 
-            return this.View("Login");
-        }
-        
-        [HttpPost]
-        public async Task<IActionResult> RegisterAsync([FromBody] RegisterRequest request)
-        {
-            if (!this.ModelState.IsValid)
-            {
-                return this.View("Registration");
-            }
-
-            try
-            {
-                await this.userService.RegisterUserAsync(request);
-            }
-            catch (UserAlreadyRegisteredException ex)
-            {
-                this.ModelState.AddModelError(string.Empty, ex.Message);
-                
-                return this.View("Registration");
-            }
-            catch (Exception ex)
-            {
-                this.ModelState.TryAddModelException(string.Empty, ex);
-                
-                return this.View("Registration");
-            }
-
-            return this.Redirect("Login");
+            return this.View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request)
+        public async Task<IActionResult> LoginAsync(LoginRequest request)
         {
             if (!this.ModelState.IsValid)
             {
-                return this.View("Login");
+                return this.View("Index");
             }
             
             try
@@ -79,16 +50,17 @@ namespace Application.Controllers
             catch (Exception ex)
             {
                 this.ModelState.AddModelError(string.Empty, ex.Message);
-                return this.View("Login");
+                return this.View("Index");
             }
 
-            return this.Redirect("Index");
+            return this.RedirectToAction("Index", "Home");
         }
 
         [HttpPost]
         public async Task<IActionResult> LogoutAsync()
         {
             await this.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            
             return this.RedirectToAction("Index");
         }
         
